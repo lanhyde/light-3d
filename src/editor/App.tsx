@@ -1,28 +1,35 @@
 import { EditorLayout } from './layout/EditorLayout'
 import { Viewport } from './viewport/Viewport'
+import { Hierarchy } from './panels/Hierarchy'
+import { Inspector } from './panels/Inspector'
+import { Toolbar } from './panels/Toolbar'
+import { ContextMenuProvider } from './ui/ContextMenu'
 
 /**
- * Editor root. For now it wires placeholder panels around the live viewport;
- * the hierarchy tree and the property inspector get real behaviour in the
- * next increment.
+ * Editor root. Panels and the viewport share state through the Zustand store,
+ * so no React context is needed for that — the engine instance, selection and
+ * gizmo mode all live there. The context-menu provider is the one piece of
+ * shared UI state that does use React context.
  */
 export default function App() {
   return (
-    <EditorLayout
-      toolbar={<strong style={{ color: '#e8e8ee' }}>light-3d</strong>}
-      left={
-        <>
-          <h2 className="panel__title">Hierarchy</h2>
-          <p className="panel__placeholder">Scene tree coming next…</p>
-        </>
-      }
-      right={
-        <>
-          <h2 className="panel__title">Inspector</h2>
-          <p className="panel__placeholder">Select an object…</p>
-        </>
-      }
-      center={<Viewport />}
-    />
+    <ContextMenuProvider>
+      <EditorLayout
+        toolbar={<Toolbar />}
+        left={
+          <>
+            <h2 className="panel__title">Hierarchy</h2>
+            <Hierarchy />
+          </>
+        }
+        right={
+          <>
+            <h2 className="panel__title">Inspector</h2>
+            <Inspector />
+          </>
+        }
+        center={<Viewport />}
+      />
+    </ContextMenuProvider>
   )
 }
