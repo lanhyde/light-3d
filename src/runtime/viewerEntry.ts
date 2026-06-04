@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { Engine } from '../engine'
 import { buildScene } from './sceneLoader'
+import { BehaviorRunner } from './behaviors'
 import type { SceneDoc } from './sceneTypes'
 
 export type { SceneDoc } from './sceneTypes'
@@ -54,12 +55,21 @@ export async function mountViewer(
   }
   for (const root of await buildScene(doc, resolveAsset)) engine.scene.add(root)
 
+  // Text assets (scripts/shaders) ride inline in the doc; index by id for behaviors.
+  const textAssets: Record<string, string> = {}
+  for (const a of doc.assets) if (a.text != null) textAssets[a.id] = a.text
+
+  // Exported scenes always "play" — behaviors drive the experience.
+  const behaviors = new BehaviorRunner(engine, engine.scene, camera, (id) => textAssets[id])
+  behaviors.start()
+
   engine.start()
 
   return {
     engine,
     controls,
     dispose: () => {
+      behaviors.stop()
       stopOrbit()
       controls.dispose()
       engine.dispose()

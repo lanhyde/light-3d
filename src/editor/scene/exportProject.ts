@@ -33,17 +33,22 @@ export async function exportWebBundle(filename = 'scene-web-export.zip'): Promis
   }
   const viewerJs = await res.text()
 
-  // Assets become separate files; strip the inline base64 from scene.json.
+  // Binary models become separate files (stripped from scene.json); text assets
+  // (scripts/shaders) stay inline in scene.json since they're small.
   const files: Record<string, Uint8Array> = {}
   for (const asset of doc.assets) {
+    if (asset.kind !== 'model') continue
     const stored = getAsset(asset.id)
-    if (!stored) throw new Error(`Asset bytes missing for "${asset.id}"`)
+    if (!stored?.bytes) throw new Error(`Asset bytes missing for "${asset.id}"`)
     files[`assets/${asset.id}.glb`] = new Uint8Array(stored.bytes)
   }
   const sceneJson = {
     ...doc,
-    // Drop inline base64; the bundle ships each asset as a separate file.
-    assets: doc.assets.map((a) => ({ id: a.id, name: a.name, mimeType: a.mimeType })),
+    assets: doc.assets.map((a) =>
+      a.kind === 'model'
+        ? { id: a.id, name: a.name, kind: a.kind, mimeType: a.mimeType }
+        : { id: a.id, name: a.name, kind: a.kind, mimeType: a.mimeType, text: a.text },
+    ),
   }
 
   files['index.html'] = strToU8(INDEX_HTML)
@@ -76,6 +81,7 @@ const INDEX_HTML = `<!doctype html>
         const doc = await (await fetch('./scene.json')).json()
         const assets = {}
         for (const a of doc.assets) {
+          if (a.kind !== 'model') continue
           assets[a.id] = await (await fetch('./assets/' + a.id + '.glb')).arrayBuffer()
         }
         await mountViewer(document.getElementById('app'), doc, { assets })

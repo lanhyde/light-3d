@@ -3,6 +3,8 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
 import { Engine } from '../../engine'
+import { BehaviorRunner } from '../../runtime/behaviors'
+import { getAsset } from '../assets/assetStore'
 import { activeUuid, useEditorStore } from '../state/editorStore'
 import { deleteSelected, duplicateSelected } from '../scene/operations'
 import { createMenuItems } from '../scene/factories'
@@ -17,11 +19,13 @@ import { useContextMenu, type MenuItem } from '../ui/contextMenuApi'
 export function Viewport() {
   const containerRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<Engine | null>(null)
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
   const transformRef = useRef<TransformControls | null>(null)
   const pickRef = useRef<(x: number, y: number) => string | null>(() => null)
 
   const selectedUuids = useEditorStore((s) => s.selectedUuids)
   const transformMode = useEditorStore((s) => s.transformMode)
+  const isPlaying = useEditorStore((s) => s.isPlaying)
   const active = activeUuid(selectedUuids)
   const { openMenu } = useContextMenu()
 
@@ -38,6 +42,7 @@ export function Viewport() {
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000)
     camera.position.set(4, 3, 6)
     camera.lookAt(0, 0, 0)
+    cameraRef.current = camera
     engine.setActiveCamera(camera)
     engine.mount(container)
 
@@ -141,6 +146,43 @@ export function Viewport() {
   useEffect(() => {
     transformRef.current?.setMode(transformMode)
   }, [transformMode])
+
+  // --- Play mode: run behaviors, non-destructively ---
+  useEffect(() => {
+    const engine = engineRef.current
+    if (!engine || !isPlaying) return
+
+    // Snapshot transforms so Stop restores the authored pose.
+    const snapshot = new Map<THREE.Object3D, { p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 }>()
+    engine.scene.traverse((o) => {
+      if (o.userData.editorOnly) return
+      snapshot.set(o, { p: o.position.clone(), q: o.quaternion.clone(), s: o.scale.clone() })
+    })
+    transformRef.current?.detach() // gizmo would fight moving objects
+
+    const runner = new BehaviorRunner(
+      engine,
+      engine.scene,
+      cameraRef.current ?? undefined,
+      (id) => getAsset(id)?.text,
+    )
+    runner.start()
+
+    return () => {
+      runner.stop()
+      for (const [o, t] of snapshot) {
+        o.position.copy(t.p)
+        o.quaternion.copy(t.q)
+        o.scale.copy(t.s)
+      }
+      // Reattach the gizmo to the active object and refresh panels.
+      const { selectedUuids, bumpScene } = useEditorStore.getState()
+      const a = activeUuid(selectedUuids)
+      const obj = a ? engine.scene.getObjectByProperty('uuid', a) : null
+      if (obj) transformRef.current?.attach(obj)
+      bumpScene()
+    }
+  }, [isPlaying])
 
   const onContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()

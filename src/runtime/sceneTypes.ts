@@ -17,12 +17,18 @@ export interface SceneDoc {
   nodes: NodeDoc[]
 }
 
+/** The kinds of project asset the editor manages (the Project window groups by this). */
+export type AssetKind = 'model' | 'script' | 'shader' | 'animation'
+
 export interface AssetDoc {
   id: string
   name: string
+  kind: AssetKind
   mimeType: string
-  /** base64 payload — present in saved scenes, omitted in exported bundles. */
+  /** base64 payload for binary assets (model). Omitted in exported bundles. */
   data?: string
+  /** source text for text assets (script/shader/animation), stored inline. */
+  text?: string
 }
 
 export interface NodeDoc {
@@ -32,10 +38,18 @@ export interface NodeDoc {
   rotation: [number, number, number] // euler radians
   scale: [number, number, number]
   children?: NodeDoc[]
+  /** Attached behaviors (Unity-style components) that drive runtime behavior. */
+  behaviors?: BehaviorDoc[]
   // Exactly one of the following describes what the node *is*:
   primitive?: PrimitiveDoc
   light?: LightDoc
   gltf?: { assetId: string }
+}
+
+/** A behavior attached to a node: a registered `type` plus its configured props. */
+export interface BehaviorDoc {
+  type: string
+  props: Record<string, number | string | boolean>
 }
 
 export interface PrimitiveDoc {

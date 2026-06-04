@@ -8,7 +8,7 @@ import {
   putAsset,
 } from '../assets/assetStore'
 import { buildScene } from '../../runtime/sceneLoader'
-import type { AssetDoc, LightDoc, NodeDoc, PrimitiveDoc, SceneDoc } from '../../runtime/sceneTypes'
+import type { AssetDoc, BehaviorDoc, LightDoc, NodeDoc, PrimitiveDoc, SceneDoc } from '../../runtime/sceneTypes'
 import { SCENE_DOC_VERSION } from '../../runtime/sceneTypes'
 import { clearSceneContent } from './operations'
 
@@ -17,19 +17,22 @@ export type { SceneDoc } from '../../runtime/sceneTypes'
 // --- Serialize -------------------------------------------------------------
 
 export function serializeScene(scene: THREE.Scene): SceneDoc {
-  const usedAssets = new Set<string>()
   const nodes = scene.children
     .filter((o) => !o.userData.editorOnly)
-    .map((o) => serializeNode(o, usedAssets))
+    .map((o) => serializeNode(o))
 
-  const assets: AssetDoc[] = allAssets()
-    .filter((a) => usedAssets.has(a.id))
-    .map((a) => ({ id: a.id, name: a.name, mimeType: a.mimeType, data: bytesToBase64(a.bytes) }))
+  // Persist the whole project asset registry so the Project window round-trips.
+  const assets: AssetDoc[] = allAssets().map((a) => {
+    const doc: AssetDoc = { id: a.id, name: a.name, kind: a.kind, mimeType: a.mimeType }
+    if (a.kind === 'model' && a.bytes) doc.data = bytesToBase64(a.bytes)
+    else if (a.text != null) doc.text = a.text
+    return doc
+  })
 
   return { version: SCENE_DOC_VERSION, assets, nodes }
 }
 
-function serializeNode(obj: THREE.Object3D, usedAssets: Set<string>): NodeDoc {
+function serializeNode(obj: THREE.Object3D): NodeDoc {
   const node: NodeDoc = {
     name: obj.name,
     visible: obj.visible,
@@ -38,8 +41,12 @@ function serializeNode(obj: THREE.Object3D, usedAssets: Set<string>): NodeDoc {
     scale: obj.scale.toArray(),
   }
 
+  const behaviors = obj.userData.behaviors as BehaviorDoc[] | undefined
+  if (behaviors?.length) {
+    node.behaviors = behaviors.map((b) => ({ type: b.type, props: { ...b.props } }))
+  }
+
   if (obj.userData.assetKind === 'gltf') {
-    usedAssets.add(obj.userData.assetId)
     node.gltf = { assetId: obj.userData.assetId }
     return node // glTF subtree is referenced by id, not walked
   }
@@ -52,7 +59,7 @@ function serializeNode(obj: THREE.Object3D, usedAssets: Set<string>): NodeDoc {
     node.light = serializeLight(obj as THREE.Light)
   }
 
-  if (children.length > 0) node.children = children.map((c) => serializeNode(c, usedAssets))
+  if (children.length > 0) node.children = children.map((c) => serializeNode(c))
   return node
 }
 
@@ -92,7 +99,12 @@ export async function applySceneDoc(scene: THREE.Scene, doc: SceneDoc): Promise<
   clearAssets()
 
   for (const a of doc.assets) {
-    putAsset({ id: a.id, name: a.name, mimeType: a.mimeType, bytes: base64ToBytes(a.data ?? '') })
+    const kind = a.kind ?? (a.data != null ? 'model' : 'script')
+    if (kind === 'model') {
+      putAsset({ id: a.id, name: a.name, kind, mimeType: a.mimeType, bytes: base64ToBytes(a.data ?? '') })
+    } else {
+      putAsset({ id: a.id, name: a.name, kind, mimeType: a.mimeType, text: a.text ?? '' })
+    }
   }
 
   // Shared loader, backed by the editor's asset store.

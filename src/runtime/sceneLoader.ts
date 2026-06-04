@@ -42,6 +42,10 @@ async function buildNode(node: NodeDoc, resolveAsset: AssetResolver): Promise<TH
   obj.rotation.set(node.rotation[0], node.rotation[1], node.rotation[2])
   obj.scale.fromArray(node.scale)
 
+  if (node.behaviors?.length) {
+    obj.userData.behaviors = node.behaviors.map((b) => ({ type: b.type, props: { ...b.props } }))
+  }
+
   if (node.children && !node.gltf) {
     for (const child of node.children) obj.add(await buildNode(child, resolveAsset))
   }

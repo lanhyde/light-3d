@@ -22,8 +22,16 @@
 .editor__body {
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: 240px 1fr 280px;
+  grid-template-columns: 240px 1fr 320px;
   min-height: 0;
+}
+
+.editor__bottom {
+  flex: 0 0 240px;
+  min-height: 0;
+  background: #1c1d23;
+  border-top: 1px solid #2e2f37;
+  overflow: hidden;
 }
 
 .editor__panel {

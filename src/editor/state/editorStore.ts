@@ -17,22 +17,30 @@ interface EditorState {
    * deliberately keep Object3D instances out of the store.
    */
   sceneRevision: number
+  /** Counter bumped whenever the project asset registry changes. */
+  assetRevision: number
   /** Active gizmo mode. */
   transformMode: TransformMode
+  /** Whether behaviors are running (Play mode). Transforms restore on Stop. */
+  isPlaying: boolean
 
   setEngine: (engine: Engine | null) => void
   /** Select a single object, or toggle it when `additive` (Ctrl/Cmd). null clears. */
   select: (uuid: string | null, additive?: boolean) => void
   setSelection: (uuids: string[]) => void
   bumpScene: () => void
+  bumpAssets: () => void
   setTransformMode: (mode: TransformMode) => void
+  setPlaying: (playing: boolean) => void
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
   engine: null,
   selectedUuids: [],
   sceneRevision: 0,
+  assetRevision: 0,
   transformMode: 'translate',
+  isPlaying: false,
 
   setEngine: (engine) => set({ engine, selectedUuids: [] }),
   select: (uuid, additive = false) =>
@@ -45,7 +53,9 @@ export const useEditorStore = create<EditorState>((set) => ({
     }),
   setSelection: (selectedUuids) => set({ selectedUuids }),
   bumpScene: () => set((s) => ({ sceneRevision: s.sceneRevision + 1 })),
+  bumpAssets: () => set((s) => ({ assetRevision: s.assetRevision + 1 })),
   setTransformMode: (transformMode) => set({ transformMode }),
+  setPlaying: (isPlaying) => set({ isPlaying }),
 }))
 
 /** The active object's UUID (last selected), or null. */

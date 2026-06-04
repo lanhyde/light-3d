@@ -16,6 +16,8 @@ const MODES: { mode: TransformMode; label: string; key: string }[] = [
 export function Toolbar() {
   const transformMode = useEditorStore((s) => s.transformMode)
   const setTransformMode = useEditorStore((s) => s.setTransformMode)
+  const isPlaying = useEditorStore((s) => s.isPlaying)
+  const setPlaying = useEditorStore((s) => s.setPlaying)
   const { openMenu } = useContextMenu()
 
   const gltfInput = useRef<HTMLInputElement>(null)
@@ -66,11 +68,20 @@ export function Toolbar() {
             className={`toolbar__btn${transformMode === mode ? ' toolbar__btn--active' : ''}`}
             onClick={() => setTransformMode(mode)}
             title={`${label} (${key})`}
+            disabled={isPlaying}
           >
             {label}
           </button>
         ))}
       </div>
+
+      <button
+        className={`toolbar__btn${isPlaying ? ' toolbar__btn--active' : ''}`}
+        onClick={() => setPlaying(!isPlaying)}
+        title={isPlaying ? 'Stop and restore the authored scene' : 'Run behaviors'}
+      >
+        {isPlaying ? '■ Stop' : '▶ Play'}
+      </button>
 
       <input
         ref={gltfInput}

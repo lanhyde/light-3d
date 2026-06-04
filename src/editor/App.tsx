@@ -2,6 +2,7 @@ import { EditorLayout } from './layout/EditorLayout'
 import { Viewport } from './viewport/Viewport'
 import { Hierarchy } from './panels/Hierarchy'
 import { Inspector } from './panels/Inspector'
+import { Project } from './panels/Project'
 import { Toolbar } from './panels/Toolbar'
 import { ContextMenuProvider } from './ui/ContextMenu'
 
@@ -29,6 +30,7 @@ export default function App() {
           </>
         }
         center={<Viewport />}
+        bottom={<Project />}
       />
     </ContextMenuProvider>
   )
