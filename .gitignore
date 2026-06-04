@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Generated export runtime (built by `npm run build:runtime`)
+public/export
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

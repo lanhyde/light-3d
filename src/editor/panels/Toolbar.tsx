@@ -3,7 +3,8 @@ import type { TransformMode } from '../state/editorStore'
 import { useEditorStore } from '../state/editorStore'
 import { createMenuItems } from '../scene/factories'
 import { importGltfFiles, loadSceneFromFile, saveSceneToFile } from '../scene/io'
-import { useContextMenu } from '../ui/ContextMenu'
+import { exportWebBundle } from '../scene/exportProject'
+import { useContextMenu } from '../ui/contextMenuApi'
 import './panels.css'
 
 const MODES: { mode: TransformMode; label: string; key: string }[] = [
@@ -42,6 +43,15 @@ export function Toolbar() {
           title="Import .glb, or a .gltf together with its .bin and texture files"
         >
           Import
+        </button>
+        <button
+          className="toolbar__btn"
+          onClick={() =>
+            void exportWebBundle().catch((err) => console.error('Web export failed:', err))
+          }
+          title="Export a runnable, self-contained web bundle (.zip) of this scene"
+        >
+          Export
         </button>
       </div>
 

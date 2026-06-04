@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import * as THREE from 'three'
 import { activeUuid, useEditorStore } from '../state/editorStore'
 import './panels.css'
@@ -20,6 +20,16 @@ export function Inspector() {
 
   if (!obj) return <p className="panel__placeholder">Select an object…</p>
 
+  // Mutate the live object by re-resolving it inside the handler, so we never
+  // write back to the same value we read during render (which the immutability
+  // lint forbids). `bumpScene` then propagates the change.
+  const mutate = (fn: (o: THREE.Object3D) => void) => {
+    const target = engine?.scene.getObjectByProperty('uuid', active ?? '')
+    if (!target) return
+    fn(target)
+    bumpScene()
+  }
+
   return (
     <div className="inspector">
       {selectedUuids.length > 1 && (
@@ -32,10 +42,7 @@ export function Inspector() {
         <input
           className="field__text"
           value={obj.name}
-          onChange={(e) => {
-            obj.name = e.target.value
-            bumpScene()
-          }}
+          onChange={(e) => mutate((o) => (o.name = e.target.value))}
         />
       </label>
 
@@ -44,10 +51,7 @@ export function Inspector() {
         <input
           type="checkbox"
           checked={obj.visible}
-          onChange={(e) => {
-            obj.visible = e.target.checked
-            bumpScene()
-          }}
+          onChange={(e) => mutate((o) => (o.visible = e.target.checked))}
         />
       </label>
 
@@ -135,9 +139,14 @@ function NumberInput({
   const [text, setText] = useState(() => format(value))
   const [focused, setFocused] = useState(false)
 
-  useEffect(() => {
+  // Sync from the source value when it changes externally (e.g. a live gizmo
+  // drag) while this field isn't being edited. Adjusting state during render is
+  // React's recommended alternative to a value-watching effect.
+  const [prevValue, setPrevValue] = useState(value)
+  if (value !== prevValue) {
+    setPrevValue(value)
     if (!focused) setText(format(value))
-  }, [value, focused])
+  }
 
   return (
     <input

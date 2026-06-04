@@ -1,32 +1,12 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { ContextMenuContext, type MenuItem } from './contextMenuApi'
 import './ContextMenu.css'
-
-export interface MenuItem {
-  /** Display text. Omit when `separator` is set. */
-  label?: string
-  onClick?: () => void
-  disabled?: boolean
-  separator?: boolean
-}
 
 interface MenuState {
   x: number
   y: number
   items: MenuItem[]
 }
-
-interface ContextMenuApi {
-  openMenu: (x: number, y: number, items: MenuItem[]) => void
-}
-
-const ContextMenuContext = createContext<ContextMenuApi | null>(null)
 
 /** Provides a single floating menu, opened imperatively via {@link useContextMenu}. */
 export function ContextMenuProvider({ children }: { children: ReactNode }) {
@@ -85,12 +65,6 @@ export function ContextMenuProvider({ children }: { children: ReactNode }) {
       )}
     </ContextMenuContext.Provider>
   )
-}
-
-export function useContextMenu(): ContextMenuApi {
-  const ctx = useContext(ContextMenuContext)
-  if (!ctx) throw new Error('useContextMenu must be used within a ContextMenuProvider')
-  return ctx
 }
 
 /** Keep the menu inside the viewport (rough estimate of its footprint). */

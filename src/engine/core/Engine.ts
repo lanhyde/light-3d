@@ -107,7 +107,7 @@ export class Engine {
     if (!this.container) return
     const { clientWidth: w, clientHeight: h } = this.container
     if (w === 0 || h === 0) return
-    this.renderer.setSize(w, h, false)
+    this.renderer.setSize(w, h)
     const cam = this.activeCamera
     if (cam instanceof THREE.PerspectiveCamera) {
       cam.aspect = w / h

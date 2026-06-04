@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { MenuItem } from '../ui/ContextMenu'
+import type { MenuItem } from '../ui/contextMenuApi'
 import { addObject } from './operations'
 
 const defaultMaterial = () =>

@@ -7,7 +7,7 @@ import {
   moveObject,
   reparentObject,
 } from '../scene/operations'
-import { useContextMenu } from '../ui/ContextMenu'
+import { useContextMenu } from '../ui/contextMenuApi'
 import './panels.css'
 
 type DropPosition = 'before' | 'after' | 'inside'
@@ -116,7 +116,8 @@ export function Hierarchy() {
     onToggleCollapse: (uuid) =>
       setCollapsed((prev) => {
         const next = new Set(prev)
-        next.has(uuid) ? next.delete(uuid) : next.add(uuid)
+        if (next.has(uuid)) next.delete(uuid)
+        else next.add(uuid)
         return next
       }),
     onStartRename: setRenamingUuid,

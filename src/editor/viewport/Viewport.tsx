@@ -6,7 +6,7 @@ import { Engine } from '../../engine'
 import { activeUuid, useEditorStore } from '../state/editorStore'
 import { deleteSelected, duplicateSelected } from '../scene/operations'
 import { createMenuItems } from '../scene/factories'
-import { useContextMenu, type MenuItem } from '../ui/ContextMenu'
+import { useContextMenu, type MenuItem } from '../ui/contextMenuApi'
 
 /**
  * Bridges the framework-agnostic {@link Engine} into React and hosts all the
